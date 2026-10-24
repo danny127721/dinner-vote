@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>晚餐投票</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: three evenings, each a vertical timeline from 17:30 clock-off to the last bite; every stop shows its open window on a shared 17:30–21:30 axis. */
+:root{
+  color-scheme:light dark;
+  --bg:#EFF1F5;
+  --surface:#FFFFFF;
+  --surface2:#F5F6FA;
+  --ink:#1B2236;
+  --ink2:#5A6279;
+  --line:#D8DCE6;
+  --accent:#2F4A9E;
+  --accent-ink:#FFFFFF;
+  --lantern:#C98414;
+  --lantern-bg:#FBF1DC;
+  --ok:#2F8F6B;
+  --font-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12161F;--surface:#1B2130;--surface2:#222A3C;--ink:#E7EAF2;--ink2:#9AA3BA;--line:#2F384D;
+  --accent:#9DB2F5;--accent-ink:#12161F;--lantern:#F0B24F;--lantern-bg:#2D2616;--ok:#59C79C}}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;
+  padding-block:max(24px,env(safe-area-inset-top,0px)) 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+a{color:var(--accent);text-underline-offset:3px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-family:var(--font-display);font-size:clamp(1.8rem,5vw,2.4rem);line-height:1.2;letter-spacing:.02em}
+.sub{margin:6px 0 0;color:var(--ink2)}
+.status{margin:12px 0 0;padding:8px 12px;border-radius:6px;background:var(--lantern-bg);color:var(--ink);font-size:.9rem}
+.status:empty{display:none}
+
+.me{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.me label{font-weight:700}
+.me input{font:inherit;flex:1 1 140px;min-width:0;padding:7px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface2);color:var(--ink)}
+.me input:focus-visible{outline:3px solid var(--lantern);outline-offset:1px}
+.me button{font:inherit;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent);padding:6px 12px;border-radius:8px;min-height:38px}
+.me button:focus-visible{outline:3px solid var(--lantern);outline-offset:2px}
+.me .hint{flex-basis:100%;margin:0;font-size:.82rem;color:var(--ink2)}
+
+.standing{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.standing>div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:0}
+.standing small{display:block;color:var(--ink2);font-size:.78rem;letter-spacing:.08em}
+.standing b{display:block;font-weight:700;overflow-wrap:anywhere}
+
+.night{display:flex;flex-direction:column;gap:14px}
+.night h2{font-family:var(--font-display);font-size:1.5rem;letter-spacing:.04em;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.steps{display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:0 14px}
+.time{font-family:var(--font-mono);font-size:.9rem;color:var(--ink2);padding-top:2px;text-align:right}
+.body{position:relative;border-left:2px solid var(--line);padding:0 0 22px 20px;min-width:0}
+.step:last-child .body{padding-bottom:0}
+.body::before{content:"";position:absolute;left:-6px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+.step.dessert .body::before{background:var(--lantern)}
+.step-title{font-weight:700;margin:0 0 2px}
+.step-note{margin:0 0 10px;color:var(--ink2);font-size:.9rem}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.card.lead{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card h3{font-size:1.05rem;line-height:1.35}
+.chip{flex:none;font-size:.72rem;padding:1px 8px;border-radius:99px;background:var(--surface2);color:var(--ink2);border:1px solid var(--line);white-space:nowrap}
+.chip.lead{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.meta{margin:0;font-size:.88rem;color:var(--ink2);overflow-wrap:anywhere}
+.meta b{color:var(--ink);font-weight:500}
+.rate{font-family:var(--font-mono);font-size:.84rem;color:var(--ink)}
+.rate .star{color:var(--lantern)}
+
+.axis{position:relative;height:8px;border-radius:4px;background:var(--surface2);border:1px solid var(--line);margin-top:4px}
+.fill{position:absolute;top:-1px;bottom:-1px;border-radius:4px;background:var(--ok)}
+.fill.unknown{background:transparent;border:1px dashed var(--ink2);left:0;right:0}
+.ticks{position:relative;height:14px;font-family:var(--font-mono);font-size:.66rem;color:var(--ink2)}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.axis-cap{font-size:.74rem;color:var(--ink2);margin:0}
+
+.links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem}
+.vote{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
+.vrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+button.vbtn{font:inherit;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent);padding:6px 14px;border-radius:8px;min-height:40px}
+button.vbtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+button.vbtn:disabled{opacity:.45;cursor:not-allowed}
+button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outline-offset:2px}
+.count{font-family:var(--font-mono);font-size:.95rem}
+.voters{display:flex;flex-wrap:wrap;gap:4px}
+.voters span{font-size:.78rem;padding:0 8px;border-radius:99px;background:var(--lantern-bg);color:var(--ink)}
+.foot{font-size:.82rem;color:var(--ink2);border-top:1px solid var(--line);padding-top:14px}
+.foot p{margin:0 0 6px}
+@media (max-width:480px){.step{grid-template-columns:3.2rem minmax(0,1fr);gap:0 10px}.body{padding-left:16px}}
+@media (prefers-reduced-motion:no-preference){button.vbtn{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>晚餐投票</h1>
+    <p class="sub">展期 10/26–10/29，17:30 下班後。三個晚上，每晚二選一，投票決定今晚吃哪家。</p>
+    <p class="status" id="status" role="status"></p>
+  </header>
+
+  <section class="me" aria-label="你的名字">
+    <label for="myname">你的名字</label>
+    <input id="myname" type="text" maxlength="12" placeholder="輸入名字才能投票" autocomplete="nickname">
+    <button type="button" id="copylink">複製網址</button>
+    <p class="hint">把網址傳給大家，每個人輸入自己的名字就能投票，不需要登入任何帳號。</p>
+  </section>
+
+  <section class="standing" id="standing" aria-label="目前領先"></section>
+  <div id="nights" class="wrap" style="gap:36px"></div>
+  <footer class="foot">
+    <p>營業時間與價格引用自食尚玩家等網站（2026 年 4 月更新），小吃店可能臨時公休，出發前請用「地圖」連結在 Google 地圖確認。</p>
+    <p>評價是文章引用的星等，不是即時分數。潮饌麵府沒有查到評價。時間軸上的時間是參考，實際以各店營業時間為準。</p>
+  </footer>
+</main>
+
+<script>
+(function(){
+  /* ---------- 投票資料庫設定 ----------
+     把下面這行換成你自己的 Firebase Realtime Database 網址，例如
+     https://my-dinner-vote-default-rtdb.asia-southeast1.firebasedatabase.app
+     （設定步驟請看 README.md） */
+  var DB_URL='https://dinner-vote-3f1bd-default-rtdb.asia-southeast1.firebasedatabase.app/';
+  var POLL_MS=4000;
+
+  var AX0=17*60+30, AXN=240; // axis 17:30 to 21:30
+  function m(t){var p=t.split(':');return +p[0]*60+ +p[1];}
+  var NIGHTS=[
+    {id:'n1',title:'第一晚',steps:[
+      {t:'17:30',title:'下班，往吳興街走',note:'查記離捷運台北101/世貿站 2 號出口約 5 分鐘。'},
+      {t:'17:45',title:'晚餐二選一',note:'查記 19:30 打烊，要早到。潮饌 18:00 才開門，賣完就收。',options:[
+        {id:'zha',name:'查記麵館',kind:'麵食',price:'價格文章未列',rate:['4.4','Google'],dishes:'招牌皮蛋抄手麵、抄手',hours:'週一至五 16:30–19:30（週六日休）',open:['16:30','19:30'],addr:'台北市信義區吳興街37號',tel:'02-2758-8538',src:'https://supertaste.tvbs.com.tw/infocard/29760',tip:'點完餐約 10 分鐘上菜。'},
+        {id:'chao',name:'潮饌麵府 吳興創始店',kind:'擔擔麵、餛飩',price:'價格未查到',rate:null,dishes:'擔擔麵、餛飩',hours:'每天 11:30–14:00、18:00–20:30（售完為止）',open:['18:00','20:30'],addr:'台北市信義區吳興街83號',tel:'0910-771-220',src:'https://supertaste.tvbs.com.tw/infocard/26927',tip:'晚餐 18:00 開門。'}
+      ]}
+    ]},
+    {id:'n2',title:'第二晚',steps:[
+      {t:'17:30',title:'下班',note:'依鼎在吳興街，重慶抄手在莊敬路，從世貿站走約 6 分鐘。'},
+      {t:'17:45',title:'晚餐二選一',note:'兩家用餐時段都常客滿，依鼎會併桌。',options:[
+        {id:'yiding',name:'依鼎越式美食',kind:'越南河粉',price:'價格文章未列',rate:['4.6','Google'],dishes:'鮮牛肉河粉、烤雞腿飯、煉乳咖啡',hours:'每天 10:00–21:00',open:['10:00','21:00'],addr:'台北市信義區吳興街140號',tel:'0976-459-556',src:'https://supertaste.tvbs.com.tw/infocard/27209',tip:'尖峰時間常要併桌。'},
+        {id:'cq',name:'重慶抄手麵食（莊敬路）',kind:'川味麵食',price:'約 70–120 元',rate:['4.2','Google，舊文章引用'],dishes:'怪味乾拌麵 70、紅油抄手 90、鮮菇雞湯麵 120',hours:'週一至六 11:00–14:00、17:00–20:30（週日休）',open:['17:00','20:30'],addr:'台北市信義區莊敬路289巷3弄47號',tel:'02-8780-9912',src:'https://ifoodie.tw/restaurant/55a4f0b9c03a10241de639f6-重慶抄手麵食',tip:'平日晚上桌數不多，常客滿。'}
+      ]},
+      {t:'餐後',title:'甜點：豆花森',note:'已選定，不用投票。',dessert:true,card:
+        {id:'bean',name:'豆花森',kind:'手工豆花',price:'價格未查到',rate:['4.9','Uber Eats，800+ 則'],dishes:'三代傳承手工豆花',hours:'營業時間未查到，出發前先打電話確認',open:null,addr:'台北市信義區吳興街156巷2弄6號1樓',tel:'02-2732-2797',src:'https://www.instagram.com/bean_forest1976/',tip:''}}
+    ]},
+    {id:'n3',title:'第三晚',steps:[
+      {t:'17:30',title:'下班',note:'兩家與甜點都在吳興街 281 巷內，不用換地方。'},
+      {t:'17:45',title:'晚餐二選一',note:'林家 20:30 收，呂舖 21:00 收。',options:[
+        {id:'lu',name:'呂舖食堂',kind:'日式咖哩、蛋包飯',price:'主餐約 110–195 元',rate:['4.5','Google'],dishes:'燉雞肉咖哩加歐姆蛋 155 元',hours:'週一至五 11:30–14:30、17:00–21:00（週六日休）',open:['17:00','21:00'],addr:'台北市信義區吳興街281巷41號',tel:'0952-761-120',src:'https://supertaste.tvbs.com.tw/infocard/26928',tip:''},
+        {id:'lin',name:'林家牛肉麵',kind:'牛肉麵',price:'價格文章未列',rate:['4.1','Google'],dishes:'半筋半肉麵、滷花干，可免費加湯',hours:'週一至六 11:30–20:30（週日休）',open:['11:30','20:30'],addr:'台北市信義區吳興街281巷9號',tel:'0922-163-609',src:'https://supertaste.tvbs.com.tw/infocard/33281',tip:'藥膳湯頭。'}
+      ]},
+      {t:'餐後',title:'甜點：281雞蛋糕',note:'已選定，不用投票。',dessert:true,card:
+        {id:'cake',name:'281雞蛋糕',kind:'雞蛋糕',price:'45–75 元',rate:['4.5','Google'],dishes:'巧克力、起司最多人點，可做成一片式',hours:'週一至五 14:30–21:00（週日休）',open:['14:30','21:00'],addr:'台北市信義區吳興街281巷口',tel:'0952-055-668',src:'https://supertaste.tvbs.com.tw/infocard/21778',tip:''}}
+    ]}
+  ];
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function mapUrl(o){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(o.name+' '+o.addr);}
+  function axis(o){
+    var ticks='<div class="ticks" aria-hidden="true"><span style="left:0">17:30</span>'+
+      [['18:00',30],['19:00',90],['20:00',150],['21:00',210]].map(function(x){return '<span style="left:'+(x[1]/AXN*100)+'%">'+x[0]+'</span>';}).join('')+'</div>';
+    if(!o.open){return '<div class="axis" role="img" aria-label="營業時間未查到"><div class="fill unknown"></div></div>'+ticks+'<p class="axis-cap">營業時間未查到</p>';}
+    var a=Math.max(m(o.open[0]),AX0), b=Math.min(m(o.open[1]),AX0+AXN);
+    var left=(a-AX0)/AXN*100, w=(b-a)/AXN*100;
+    var cap='17:30 後營業到 '+o.open[1];
+    return '<div class="axis" role="img" aria-label="'+esc(cap)+'"><div class="fill" style="left:'+left+'%;width:'+w+'%"></div></div>'+ticks+'<p class="axis-cap">'+esc(cap)+'</p>';
+  }
+  function card(o,night){
+    var rate=o.rate?'<span class="star">★</span> '+o.rate[0]+' · '+esc(o.rate[1]):'尚未查到評價';
+    var h='<article class="card" data-opt="'+o.id+'">'+
+      '<div class="head"><h3>'+esc(o.name)+'</h3><span class="chip" data-lead hidden>目前領先</span><span class="chip" data-kind>'+esc(o.kind)+'</span></div>'+
+      '<p class="meta rate">'+rate+'</p>'+
+      '<p class="meta"><b>'+esc(o.price)+'</b>。'+esc(o.dishes)+'</p>'+
+      '<p class="meta">'+esc(o.hours)+(o.tip?'。'+esc(o.tip):'')+'</p>'+
+      axis(o)+
+      '<p class="meta">'+esc(o.addr)+'<br>電話 '+esc(o.tel)+'</p>'+
+      '<div class="links"><a href="'+mapUrl(o)+'" target="_blank" rel="noopener">地圖與評論</a><a href="'+esc(o.src)+'" target="_blank" rel="noopener">店家資訊</a></div>';
+    if(night){
+      h+='<div class="vote"><div class="vrow"><button class="vbtn" type="button" data-night="'+night+'" data-opt="'+o.id+'" aria-pressed="false">投這家</button><span class="count" data-count>0 票</span></div><div class="voters" data-voters></div></div>';
+    }
+    return h+'</article>';
+  }
+  var root=document.getElementById('nights'), standing=document.getElementById('standing');
+  root.innerHTML=NIGHTS.map(function(n){
+    var steps=n.steps.map(function(s){
+      var inner='';
+      if(s.options){inner='<div class="opts">'+s.options.map(function(o){return card(o,n.id);}).join('')+'</div>';}
+      else if(s.card){inner='<div class="opts">'+card(s.card,null)+'</div>';}
+      return '<div class="step'+(s.dessert?' dessert':'')+'"><div class="time">'+esc(s.t)+'</div><div class="body"><p class="step-title">'+esc(s.title)+'</p>'+(s.note?'<p class="step-note">'+esc(s.note)+'</p>':'')+inner+'</div></div>';
+    }).join('');
+    return '<section class="night" id="'+n.id+'"><h2>'+n.title+'</h2><div class="steps">'+steps+'</div></section>';
+  }).join('');
+  standing.innerHTML=NIGHTS.map(function(n){return '<div data-st="'+n.id+'"><small>'+n.title+'</small><b>還沒有人投票</b></div>';}).join('');
+
+  /* ---------- 本機資訊（名字、裝置編號） ---------- */
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  var myId=lsGet('dinner_vote_id');
+  if(!myId){myId='u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);lsSet('dinner_vote_id',myId);}
+  var nameEl=document.getElementById('myname');
+  var myName=lsGet('dinner_vote_name')||'';
+  nameEl.value=myName;
+
+  var statusEl=document.getElementById('status');
+  function setStatus(t){statusEl.textContent=t||'';}
+
+  /* ---------- 共用儲存（Firebase Realtime Database REST） ---------- */
+  var DB=(DB_URL||'').replace(/\/+$/,'');
+  var votes={};          // {deviceId:{name, n1, n2, n3}}
+  var ready=false;
+  var pending=0;
+  var chain=Promise.resolve();
+
+  function dbUrl(p){return DB+'/'+p+'.json';}
+  function pull(){
+    return fetch(dbUrl('votes'),{cache:'no-store'}).then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(d){return (d&&typeof d==='object')?d:{};});
+  }
+  function myEntry(){return votes[myId]||{};}
+  function setButtons(){
+    var on=ready&&!!myName.trim();
+    var btns=root.querySelectorAll('button.vbtn');
+    for(var i=0;i<btns.length;i++){btns[i].disabled=!on;}
+  }
+
+  function renderVotes(){
+    var ids=Object.keys(votes);
+    NIGHTS.forEach(function(n){
+      var opts=n.steps.filter(function(s){return s.options;})[0].options;
+      var tally={};opts.forEach(function(o){tally[o.id]=[];});
+      ids.forEach(function(id){var c=votes[id]&&votes[id][n.id];if(c&&tally[c])tally[c].push(id);});
+      var max=0;opts.forEach(function(o){max=Math.max(max,tally[o.id].length);});
+      var leaders=opts.filter(function(o){return max>0&&tally[o.id].length===max;});
+      var sec=document.getElementById(n.id);
+      opts.forEach(function(o){
+        var el=sec.querySelector('article[data-opt="'+o.id+'"]');
+        var list=tally[o.id];
+        el.querySelector('[data-count]').textContent=list.length+' 票';
+        var lead=leaders.length===1&&leaders[0].id===o.id;
+        el.classList.toggle('lead',lead);
+        var chip=el.querySelector('[data-lead]');chip.hidden=!lead;chip.classList.toggle('lead',lead);
+        el.querySelector('[data-kind]').hidden=lead;
+        var btn=el.querySelector('button.vbtn');
+        var mine=myEntry()[n.id]===o.id;
+        btn.setAttribute('aria-pressed',mine?'true':'false');
+        btn.textContent=mine?'已投這家（再按取消）':'投這家';
+        var box=el.querySelector('[data-voters]');box.textContent='';
+        list.forEach(function(id){
+          var s=document.createElement('span');
+          var nm=votes[id].name||'某位朋友';
+          s.textContent=id===myId?(nm+'（你）'):nm;
+          box.appendChild(s);
+        });
+      });
+      var st=standing.querySelector('[data-st="'+n.id+'"] b');
+      if(max===0)st.textContent='還沒有人投票';
+      else if(leaders.length===1)st.textContent=leaders[0].name+'（'+max+' 票）';
+      else st.textContent='平手：'+leaders.map(function(o){return o.name;}).join('、')+'（各 '+max+' 票）';
+    });
+    setButtons();
+  }
+
+  // 每個人只寫自己那一筆（votes/自己的編號），所以不會蓋掉別人的票
+  function write(method,body){
+    pending++;
+    chain=chain.then(function(){
+      return fetch(dbUrl('votes/'+myId),{method:method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        setStatus('');
+      });
+    }).catch(function(){
+      setStatus('投票沒有存成功，請檢查網路後再按一次。');
+      return pull().then(function(v){votes=v;renderVotes();}).catch(function(){});
+    }).then(function(){pending--;});
+  }
+
+  function cast(nightId,optId){
+    if(!ready||!myName.trim())return;
+    var local=Object.assign({},myEntry());
+    local[nightId]=local[nightId]===optId?null:optId;
+    local.name=myName.trim();
+    votes[myId]=local;renderVotes();
+    var body={name:local.name};
+    NIGHTS.forEach(function(n){body[n.id]=local[n.id]||null;});
+    write('PUT',body);
+  }
+  root.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button.vbtn');
+    if(b)cast(b.getAttribute('data-night'),b.getAttribute('data-opt'));
+  });
+
+  nameEl.addEventListener('input',function(){
+    myName=nameEl.value.trim();
+    lsSet('dinner_vote_name',myName);
+    setButtons();
+  });
+  nameEl.addEventListener('change',function(){
+    if(ready&&myName&&votes[myId]){votes[myId].name=myName;renderVotes();write('PATCH',{name:myName});}
+  });
+
+  document.getElementById('copylink').addEventListener('click',function(){
+    var btn=this,url=location.href.split('#')[0];
+    function done(t){var o=btn.textContent;btn.textContent=t;setTimeout(function(){btn.textContent=o;},1800);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){done('已複製');},function(){window.prompt('複製這個網址：',url);});
+    }else{window.prompt('複製這個網址：',url);}
+  });
+
+  function poll(){
+    if(pending>0)return;
+    pull().then(function(v){
+      if(pending>0)return;
+      votes=v;ready=true;renderVotes();
+      if(statusEl.textContent.indexOf('暫時')>-1)setStatus('');
+    }).catch(function(){setStatus('暫時讀不到投票結果，會自動重試。');});
+  }
+
+  function start(){
+    setButtons();renderVotes();
+    if(!DB){setStatus('管理者還沒有設定資料庫網址（DB_URL），目前只能看行程，不能投票。');return;}
+    setStatus('連線中…');
+    pull().then(function(v){
+      votes=v;ready=true;setStatus('');renderVotes();
+      setInterval(poll,POLL_MS);
+      document.addEventListener('visibilitychange',function(){if(!document.hidden)poll();});
+    }).catch(function(){
+      setStatus('連不上投票資料庫，請重新整理。若一直失敗，請管理者檢查 DB_URL 與資料庫規則。');
+    });
+  }
+  start();
+})();
+</script>
+</body>
+</html>
