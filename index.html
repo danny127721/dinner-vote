@@ -98,17 +98,32 @@ html{scroll-behavior:smooth}
 .lbtn:active{opacity:.8}
 .vote{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
 .vrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-button.vbtn{font:inherit;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent);padding:6px 14px;border-radius:8px;min-height:40px}
-button.vbtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-button.vbtn:disabled{opacity:.45;cursor:not-allowed}
+button.vbtn{font:inherit;font-size:1.1rem;font-weight:700;letter-spacing:.04em;cursor:pointer;width:100%;border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:10px 16px;border-radius:12px;min-height:54px;box-shadow:0 3px 0 rgba(0,0,0,.18)}
+button.vbtn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+button.vbtn[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+button.vbtn:disabled{background:var(--surface2);border-color:var(--line);color:var(--ink2);box-shadow:none;cursor:not-allowed;font-size:.95rem}
+.vrow{flex-direction:column;align-items:stretch}
+.count{text-align:center;font-weight:700}
+.card.lead button.vbtn[aria-pressed="false"]:not(:disabled){box-shadow:0 3px 0 rgba(0,0,0,.18),0 0 0 3px var(--lantern-bg)}
 button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outline-offset:2px}
-.count{font-family:var(--font-mono);font-size:.95rem}
+.count{font-family:var(--font-mono);font-size:1rem}
 .voters{display:flex;flex-wrap:wrap;gap:4px}
 .voters span{font-size:.78rem;padding:0 8px;border-radius:99px;background:var(--lantern-bg);color:var(--ink)}
 .foot{font-size:.82rem;color:var(--ink2);border-top:1px solid var(--line);padding-top:14px}
 .foot p{margin:0 0 6px}
 @media (max-width:480px){.step{grid-template-columns:3.2rem minmax(0,1fr);gap:0 10px}.body{padding-left:16px}}
-@media (prefers-reduced-motion:no-preference){button.vbtn{transition:background .15s,color .15s}}
+@media (prefers-reduced-motion:no-preference){button.vbtn{transition:background .15s,color .15s,transform .08s}}
+
+/* 美食照片：捲到哪一家，那一家的照片就浮現 */
+.pic{margin:0;position:relative;border-radius:8px;overflow:hidden;background:var(--surface2);aspect-ratio:16/10}
+.pic img{display:block;width:100%;height:100%;object-fit:cover}
+.pic figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 10px 8px;color:#fff;font-size:.82rem;font-weight:500;background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.pic.nopic{aspect-ratio:auto;border:1.5px dashed var(--line);background:transparent}
+.pic.nopic a{display:block;padding:14px 12px;text-align:center;font-weight:700;font-size:.9rem}
+.reveal{opacity:0;transform:translateY(28px) scale(.97)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:no-preference){.reveal{transition:opacity .6s ease,transform .6s ease}}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -187,6 +202,7 @@ button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outli
   function card(o,night){
     var rate=o.rate?'<span class="star">★</span> '+o.rate[0]+' · '+esc(o.rate[1]):'尚未查到評價';
     var h='<article class="card" data-opt="'+o.id+'">'+
+      '<figure class="pic reveal"><img src="photos/'+o.id+'.jpg" alt="'+esc(o.name+'：'+o.dishes)+'" loading="lazy"><figcaption>'+esc(o.dishes)+'</figcaption></figure>'+
       '<div class="head"><h3>'+esc(o.name)+'</h3><span class="chip" data-lead hidden>目前領先</span><span class="chip" data-kind>'+esc(o.kind)+'</span></div>'+
       '<p class="meta rate">'+rate+'</p>'+
       '<p class="meta"><b>'+esc(o.price)+'</b>。'+esc(o.dishes)+'</p>'+
@@ -209,6 +225,21 @@ button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outli
     }).join('');
     return '<section class="night" id="'+n.id+'"><h2>'+n.title+'</h2><div class="steps">'+steps+'</div></section>';
   }).join('');
+  var ALL={};NIGHTS.forEach(function(n){n.steps.forEach(function(s){(s.options||[]).concat(s.card?[s.card]:[]).forEach(function(o){ALL[o.id]=o;});});});
+  function noPhoto(img){
+    var fig=img.closest('figure.pic');if(!fig||fig.classList.contains('nopic'))return;
+    var o=ALL[fig.parentNode.getAttribute('data-opt')];if(!o)return;
+    fig.classList.add('nopic');
+    fig.innerHTML='<a href="https://www.google.com/search?tbm=isch&q='+encodeURIComponent(o.name+' '+o.dishes.split('、')[0])+'" target="_blank" rel="noopener">看「'+esc(o.name)+'」的美食照片 →</a>';
+  }
+  root.addEventListener('error',function(e){if(e.target&&e.target.tagName==='IMG')noPhoto(e.target);},true);
+  Array.prototype.forEach.call(root.querySelectorAll('figure.pic img'),function(img){if(img.complete&&img.naturalWidth===0)noPhoto(img);});
+  var figs=root.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.2,rootMargin:'0px 0px -8% 0px'});
+    Array.prototype.forEach.call(figs,function(f){io.observe(f);});
+  }else{Array.prototype.forEach.call(figs,function(f){f.classList.add('in');});}
+
   standing.innerHTML=NIGHTS.map(function(n){return '<a href="#'+n.id+'-vote" data-st="'+n.id+'"><small>'+n.title+'</small><b>還沒有人投票</b><span class="go">前往投票 ↓</span></a>';}).join('');
 
   /* ---------- 本機資訊（名字、裝置編號） ---------- */
@@ -264,7 +295,8 @@ button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outli
         var btn=el.querySelector('button.vbtn');
         var mine=myEntry()[n.id]===o.id;
         btn.setAttribute('aria-pressed',mine?'true':'false');
-        btn.textContent=mine?'已投這家（再按取消）':'投這家';
+        var canVote=ready&&!!myName.trim();
+        btn.textContent=!canVote?'請先在上方輸入名字才能投票':(mine?'✓ 已投這家（再按取消）':'投這家');
         var box=el.querySelector('[data-voters]');box.textContent='';
         list.forEach(function(id){
           var s=document.createElement('span');
@@ -313,7 +345,7 @@ button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outli
   nameEl.addEventListener('input',function(){
     myName=nameEl.value.trim();
     lsSet('dinner_vote_name',myName);
-    setButtons();
+    renderVotes();
   });
   nameEl.addEventListener('change',function(){
     if(ready&&myName&&votes[myId]){votes[myId].name=myName;renderVotes();write('PATCH',{name:myName});}
