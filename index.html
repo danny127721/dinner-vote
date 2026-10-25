@@ -50,7 +50,13 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,5vw,2.4rem);line-heigh
 .me .hint{flex-basis:100%;margin:0;font-size:.82rem;color:var(--ink2)}
 
 .standing{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.standing>div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:0}
+.standing>a{display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:0;color:inherit;text-decoration:none}
+.standing>a:hover{border-color:var(--accent)}
+.standing>a:focus-visible{outline:3px solid var(--lantern);outline-offset:2px}
+.standing .go{display:block;margin-top:2px;font-size:.78rem;color:var(--accent);font-weight:700}
+html{scroll-behavior:smooth}
+.opts[id]{scroll-margin-top:16px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .standing small{display:block;color:var(--ink2);font-size:.78rem;letter-spacing:.08em}
 .standing b{display:block;font-weight:700;overflow-wrap:anywhere}
 
@@ -86,7 +92,10 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,5vw,2.4rem);line-heigh
 .ticks span:first-child{transform:none}
 .axis-cap{font-size:.74rem;color:var(--ink2);margin:0}
 
-.links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem}
+.links{display:flex;gap:8px}
+.lbtn{flex:1 1 0;display:flex;align-items:center;justify-content:center;min-height:42px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:.92rem;text-decoration:none;text-align:center}
+.lbtn.alt{background:transparent;color:var(--accent)}
+.lbtn:active{opacity:.8}
 .vote{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
 .vrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 button.vbtn{font:inherit;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent);padding:6px 14px;border-radius:8px;min-height:40px}
@@ -184,7 +193,7 @@ button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outli
       '<p class="meta">'+esc(o.hours)+(o.tip?'。'+esc(o.tip):'')+'</p>'+
       axis(o)+
       '<p class="meta">'+esc(o.addr)+'<br>電話 '+esc(o.tel)+'</p>'+
-      '<div class="links"><a href="'+mapUrl(o)+'" target="_blank" rel="noopener">地圖與評論</a><a href="'+esc(o.src)+'" target="_blank" rel="noopener">店家資訊</a></div>';
+      '<div class="links"><a class="lbtn" href="'+mapUrl(o)+'" target="_blank" rel="noopener">Google 地圖與評論</a><a class="lbtn alt" href="'+esc(o.src)+'" target="_blank" rel="noopener">店家資訊</a></div>';
     if(night){
       h+='<div class="vote"><div class="vrow"><button class="vbtn" type="button" data-night="'+night+'" data-opt="'+o.id+'" aria-pressed="false">投這家</button><span class="count" data-count>0 票</span></div><div class="voters" data-voters></div></div>';
     }
@@ -194,13 +203,13 @@ button.vbtn:focus-visible,a:focus-visible{outline:3px solid var(--lantern);outli
   root.innerHTML=NIGHTS.map(function(n){
     var steps=n.steps.map(function(s){
       var inner='';
-      if(s.options){inner='<div class="opts">'+s.options.map(function(o){return card(o,n.id);}).join('')+'</div>';}
+      if(s.options){inner='<div class="opts" id="'+n.id+'-vote">'+s.options.map(function(o){return card(o,n.id);}).join('')+'</div>';}
       else if(s.card){inner='<div class="opts">'+card(s.card,null)+'</div>';}
       return '<div class="step'+(s.dessert?' dessert':'')+'"><div class="time">'+esc(s.t)+'</div><div class="body"><p class="step-title">'+esc(s.title)+'</p>'+(s.note?'<p class="step-note">'+esc(s.note)+'</p>':'')+inner+'</div></div>';
     }).join('');
     return '<section class="night" id="'+n.id+'"><h2>'+n.title+'</h2><div class="steps">'+steps+'</div></section>';
   }).join('');
-  standing.innerHTML=NIGHTS.map(function(n){return '<div data-st="'+n.id+'"><small>'+n.title+'</small><b>還沒有人投票</b></div>';}).join('');
+  standing.innerHTML=NIGHTS.map(function(n){return '<a href="#'+n.id+'-vote" data-st="'+n.id+'"><small>'+n.title+'</small><b>還沒有人投票</b><span class="go">前往投票 ↓</span></a>';}).join('');
 
   /* ---------- 本機資訊（名字、裝置編號） ---------- */
   function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
